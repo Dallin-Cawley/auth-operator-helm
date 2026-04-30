@@ -1,0 +1,16 @@
+{{- if .Values.kubeAPI.clusterRole.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.kubeAPI.clusterRole.name }}
+  labels:
+    {{- include "auth-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.kubeAPI.clusterRole.name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.kubeAPI.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

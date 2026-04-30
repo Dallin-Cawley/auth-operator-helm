@@ -1,0 +1,52 @@
+# Default values for auth-operator.
+
+service:
+  serviceType: ClusterIP
+  port: 8081
+
+image:
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+store:
+  openbao:
+    enabled: true
+    vaultADDR: "http://openbao-release.openbao-system.svc.cluster.local:8200"
+    proxy:
+      image:
+        tag: "latest"
+      authMethod:
+        token:
+          enabled: false
+          secret:
+            name: "openbao-token"
+            key: "token"
+        kubernetes:
+          enabled: true
+          role: "auth-operator"
+
+
+kubeAPI:
+  clusterRole:
+    enabled: true
+    name: auth-operator-cluster-role
+
+  role:
+    enabled: false
+    name: auth-operator-role
+
+  serviceAccount:
+    create: true
+    name: "auth-operator"
+    annotations: { }
+
+probe:
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 8081

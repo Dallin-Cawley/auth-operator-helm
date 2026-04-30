@@ -1,0 +1,52 @@
+{{- if .Values.kubeAPI.clusterRole.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "auth-operator.name" . }}
+  name: {{ .Values.kubeAPI.clusterRole.name }}
+rules:
+  - apiGroups:
+      - auth.championtourney.com
+    resources:
+      - clientcredentials
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - auth.championtourney.com
+    resources:
+      - clientcredentials/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - "" # Core API group (v1)
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+      - delete
+      - update
+      - list
+      - get
+      - watch
+      - patch
+  - apiGroups:
+      - "" # Core API group (v1)
+    resources:
+      - events
+    verbs:
+      - create
+      - delete
+      - list
+      - get
+      - watch
+      - patch
+{{- end }}

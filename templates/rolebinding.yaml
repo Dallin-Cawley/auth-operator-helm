@@ -1,0 +1,17 @@
+{{- if .Values.kubeAPI.role.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.kubeAPI.role.name }}
+  labels:
+    {{- include "auth-operator.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.kubeAPI.role.name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.kubeAPI.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "auth-operator.fullname" . }}
+  labels:
+    {{- include "auth-operator.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "auth-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "auth-operator.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.kubeAPI.serviceAccount.name | default .Release.Name }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "git.championtourney.com/championtourney/auth-controller:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: OPENBAO_UNIX_SOCKET_PATH
+              value: /var/run/openbao/socket/bao-proxy.sock
+            - name: VAULT_ADDR
+              value: {{ .Values.store.openbao.vaultADDR }}
+            {{- range .Values.environment }}
+            - name: {{ .name }}
+              value: {{ .value }}
+            {{- end }}
+          {{- with .Values.probe.livenessProbe }}
+          livenessProbe:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probe.readinessProbe }}
+          readinessProbe:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+            - name: openbaotoken
+              mountPath: /var/secrets/openbao
+              readOnly: true
+            {{- end }}
+            - name: bao-socket
+              mountPath: /var/run/openbao/socket
+        - name: openbao-proxy
+          image: "timmy2654/openbao-proxy:{{ .Values.store.openbao.proxy.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: VAULT_ADDR
+              value: {{ .Values.store.openbao.vaultADDR }}
+            {{ if .Values.store.openbao.proxy.authMethod.kubernetes.enabled }}
+            - name: AUTH_METHOD
+              value: KUBERNETES_ROLE
+            - name: OPENBAO_ROLE
+              value: {{ .Values.store.openbao.proxy.authMethod.kubernetes.role }}
+            {{ else }}
+            - name: AUTH_METHOD
+              value: TOKEN
+            {{ end }}
+          volumeMounts:
+            {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+            - name: openbaotoken
+              mountPath: /var/secrets/openbao
+              readOnly: true
+            {{- end }}
+            - name: bao-socket
+              mountPath: /var/run/openbao/socket
+          ports:
+            - name: bao-proxy
+              containerPort: 8200
+              protocol: TCP
+      volumes:
+        {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+        - name: openbaotoken
+          secret:
+            secretName: {{ .Values.store.openbao.proxy.authMethod.token.secret.name }}
+        {{- end }}
+        - name: bao-socket
+          emptyDir: {}
