@@ -21,24 +21,18 @@
     },
     "image": {
       "type": "object",
-      "description": "Image configuration for the auth-operator deployment",
+      "description": "Image configuration for the deployments",
       "properties": {
-        "pullPolicy": {
-          "type": "string",
-          "enum": [
-            "Always",
-            "IfNotPresent",
-            "Never"
-          ]
+        "operator": {
+          "$ref": "#/$defs/imageConfig"
         },
-        "tag": {
-          "type": "string",
-          "description": "Image tag"
+        "apiAuth": {
+          "$ref": "#/$defs/imageConfig"
         }
       },
       "required": [
-        "tag",
-        "pullPolicy"
+        "operator",
+        "apiAuth"
       ]
     },
     "store": {
@@ -56,6 +50,49 @@
               "type": "string",
               "description": "OpenBao vault address"
             },
+            "kv2MountPath": {
+              "type": "string",
+              "description": "the OpenBao kv2 mount path"
+            },
+            "masterSecretPath": {
+              "type": "string",
+              "description": "the OpenBao master secret path. This path is from the kv2MountPath"
+            },
+            "transitMountPath": {
+              "type": "string",
+              "description": "the OpenBao transit mount path"
+            },
+            "transitSigningKey": {
+              "type": "string",
+              "description": "the name of the OpenBao transit signing key"
+            },
+            "tls": {
+              "type": "object",
+              "properties": {
+                "selfSigned": {
+                  "type": "boolean",
+                  "description": "Whether the OpenBao server utilizes a self-signed certificate. This is useful when the openbao proxy or another client wouldn't be able to validate the certificate without the CA certificate."
+                },
+                "secretName": {
+                  "type": "string",
+                  "description": "The name of the secret containing the TLS certificate and key"
+                },
+                "caCertKey": {
+                  "type": "string",
+                  "description": "The name of the data key in the secret containing the CA certificate"
+                }
+              },
+              "if": {
+                "properties": {
+                  "selfSigned": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "required": ["secretName", "caCertKey"]
+              }
+            },
             "proxy": {
               "type": "object",
               "properties": {
@@ -70,135 +107,22 @@
                 },
                 "authMethod": {
                   "type": "object",
-                  "description": "OpenBao authentication method",
-                  "oneOf": [
-                    {
-                      "properties": {
-                        "token": {
-                          "type": "object",
-                          "description": "OpenBao token authentication method",
-                          "properties": {
-                            "enabled": {
-                              "type": "boolean",
-                              "description": "Enable OpenBao token authentication method",
-                              "const": true
-                            },
-                            "secret": {
-                              "type": "object",
-                              "description": "The kubernetes secret where the token is stored",
-                              "properties": {
-                                "name": {
-                                  "type": "string",
-                                  "description": "Name of the kubernetes secret"
-                                },
-                                "key": {
-                                  "type": "string",
-                                  "description": "Key of the kubernetes secret containing the token"
-                                }
-                              },
-                              "required": [
-                                "name",
-                                "key"
-                              ]
-                            },
-                            "if": {
-                              "properties": {
-                                "enabled": {
-                                  "const": true
-                                }
-                              }
-                            },
-                            "then": {
-                              "required": [
-                                "secret"
-                              ]
-                            }
-                          }
-                        },
-                        "kubernetes": {
-                          "type": "object",
-                          "description": "OpenBao kubernetes authentication method. It's expected that the serviceAccount defined in the values.yaml file has the required permissions to access the OpenBao API.",
-                          "properties": {
-                            "enabled": {
-                              "type": "boolean",
-                              "description": "Enable OpenBao kubernetes authentication method",
-                              "const": false
-                            },
-                            "role": {
-                              "type": "string",
-                              "description": "The role the kubernetes service account will assume upon successful authentication in OpenBao."
-                            }
-                          },
-                          "required": [
-                            "enabled"
-                          ]
-                        }
-                      }
+                  "description": "OpenBao authentication methods",
+                  "properties": {
+                    "openBaoUsesSelfJwtReviewer": {
+                      "type": "boolean",
+                      "description": "whether the OpenBao server uses the OpenBao self JWT reviewer token for kubernetes auth engine"
                     },
-                    {
-                      "properties": {
-                        "token": {
-                          "type": "object",
-                          "description": "OpenBao token authentication method",
-                          "properties": {
-                            "enabled": {
-                              "type": "boolean",
-                              "description": "Enable OpenBao token authentication method",
-                              "const": false
-                            },
-                            "secret": {
-                              "type": "object",
-                              "description": "The kubernetes secret where the token is stored",
-                              "properties": {
-                                "name": {
-                                  "type": "string",
-                                  "description": "Name of the kubernetes secret"
-                                },
-                                "key": {
-                                  "type": "string",
-                                  "description": "Key of the kubernetes secret containing the token"
-                                }
-                              },
-                              "required": [
-                                "name",
-                                "key"
-                              ]
-                            },
-                            "if": {
-                              "properties": {
-                                "enabled": {
-                                  "const": true
-                                }
-                              }
-                            },
-                            "then": {
-                              "required": [
-                                "secret"
-                              ]
-                            }
-                          }
-                        },
-                        "kubernetes": {
-                          "type": "object",
-                          "description": "OpenBao kubernetes authentication method. It's expected that the serviceAccount defined in the values.yaml file has the required permissions to access the OpenBao API.",
-                          "properties": {
-                            "enabled": {
-                              "type": "boolean",
-                              "description": "Enable OpenBao kubernetes authentication method",
-                              "const": true
-                            },
-                            "role": {
-                              "type": "string",
-                              "description": "The role the kubernetes service account will assume upon successful authentication in OpenBao."
-                            }
-                          },
-                          "required": [
-                            "enabled",
-                            "role"
-                          ]
-                        }
-                      }
+                    "operator": {
+                      "$ref": "#/$defs/authMethod"
+                    },
+                    "apiAuth": {
+                      "$ref": "#/$defs/authMethod"
                     }
+                  },
+                  "required": [
+                    "operator",
+                    "apiAuth"
                   ]
                 }
               },
@@ -233,120 +157,256 @@
     "kubeAPI": {
       "type": "object",
       "properties": {
-        "serviceAccount": {
+        "operator": {
           "type": "object",
-          "description": "Service account configuration. This service account is used to authenticate with the Kubernetes API. If the openbao.proxy.authMethod.kubernetes.enabled is set to true, this serviceAccount will also be used to authenticate with openbao.",
           "properties": {
-            "create": {
-              "type": "boolean",
-              "description": "Whether the helm chart will create the service account"
-            },
-            "annotations": {
+            "serviceAccount": {
               "type": "object",
-              "description": "Annotations for the service account"
+              "description": "Service account configuration. This service account is used to authenticate with the Kubernetes API. If the openbao.proxy.authMethod.operator.kubernetes.enabled is set to true, this serviceAccount will also be used to authenticate with openbao.",
+              "properties": {
+                "create": {
+                  "type": "boolean",
+                  "description": "Whether the helm chart will create the service account"
+                },
+                "annotations": {
+                  "type": "object",
+                  "description": "Annotations for the service account"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the service account. If create is set to false, this value will be used to find the existing service account"
+                }
+              },
+              "required": [
+                "create",
+                "name"
+              ]
             },
-            "name": {
-              "type": "string",
-              "description": "Name of the service account. If create is set to false, this value will be used to find the existing service account"
+            "clusterRole": {
+              "type": "object",
+              "description": "Cluster role configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable cluster role"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the cluster role"
+                }
+              },
+              "required": [
+                "enabled"
+              ],
+              "if": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "role": {
+              "type": "object",
+              "description": "Role configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable role"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the role"
+                }
+              },
+              "required": [
+                "enabled"
+              ],
+              "if": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "name"
+                ]
+              }
             }
           },
-          "required": [
-            "create",
-            "name"
+          "oneOf": [
+            {
+              "properties": {
+                "clusterRole": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                },
+                "role": {
+                  "properties": {
+                    "enabled": {
+                      "const": false
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "clusterRole": {
+                  "properties": {
+                    "enabled": {
+                      "const": false
+                    }
+                  }
+                },
+                "role": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                }
+              }
+            }
           ]
         },
-        "clusterRole": {
+        "apiAuth": {
           "type": "object",
-          "description": "Cluster role configuration",
           "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable cluster role"
+            "serviceAccount": {
+              "type": "object",
+              "description": "Service account configuration for api-auth. If the openbao.proxy.authMethod.apiAuth.kubernetes.enabled is set to true, this serviceAccount will also be used to authenticate with openbao.",
+              "properties": {
+                "create": {
+                  "type": "boolean",
+                  "description": "Whether the helm chart will create the service account"
+                },
+                "annotations": {
+                  "type": "object",
+                  "description": "Annotations for the service account"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the service account. If create is set to false, this value will be used to find the existing service account"
+                }
+              },
+              "required": [
+                "create",
+                "name"
+              ]
             },
-            "name": {
-              "type": "string",
-              "description": "Name of the cluster role"
-            }
-          },
-          "required": [
-            "enabled"
-          ],
-          "if": {
-            "properties": {
-              "enabled": {
-                "const": true
+            "clusterRole": {
+              "type": "object",
+              "description": "API Auth cluster role configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable cluster role"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the cluster role"
+                }
+              },
+              "required": [
+                "enabled"
+              ],
+              "if": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "role": {
+              "type": "object",
+              "description": "API Auth role configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable role"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the role"
+                }
+              },
+              "required": [
+                "enabled"
+              ],
+              "if": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "name"
+                ]
               }
             }
           },
-          "then": {
-            "required": [
-              "name"
-            ]
-          }
-        },
-        "role": {
-          "type": "object",
-          "description": "Role configuration",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable role"
-            }
-          },
-          "required": [
-            "enabled"
-          ],
-          "if": {
-            "properties": {
-              "enabled": {
-                "const": true
+          "oneOf": [
+            {
+              "properties": {
+                "clusterRole": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                },
+                "role": {
+                  "properties": {
+                    "enabled": {
+                      "const": false
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "properties": {
+                "clusterRole": {
+                  "properties": {
+                    "enabled": {
+                      "const": false
+                    }
+                  }
+                },
+                "role": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                }
               }
             }
-          },
-          "then": {
-            "required": [
-              "name"
-            ]
-          }
+          ]
         }
       },
-      "oneOf": [
-        {
-          "properties": {
-            "clusterRole": {
-              "properties": {
-                "enabled": {
-                  "const": true
-                }
-              }
-            },
-            "role": {
-              "properties": {
-                "enabled": {
-                  "const": false
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "clusterRole": {
-              "properties": {
-                "enabled": {
-                  "const": false
-                }
-              }
-            },
-            "role": {
-              "properties": {
-                "enabled": {
-                  "const": true
-                }
-              }
-            }
-          }
-        }
+      "required": [
+        "operator",
+        "apiAuth"
       ]
     },
     "probe": {
@@ -420,5 +480,161 @@
     "store",
     "kubeAPI",
     "probe"
-  ]
+  ],
+  "$defs": {
+    "imageConfig": {
+      "type": "object",
+      "properties": {
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        },
+        "tag": {
+          "type": "string",
+          "description": "Image tag"
+        }
+      },
+      "required": [
+        "tag",
+        "pullPolicy"
+      ]
+    },
+    "authMethod": {
+      "type": "object",
+      "description": "OpenBao authentication method configuration",
+      "oneOf": [
+        {
+          "properties": {
+            "token": {
+              "type": "object",
+              "description": "OpenBao token authentication method",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable OpenBao token authentication method",
+                  "const": true
+                },
+                "secret": {
+                  "type": "object",
+                  "description": "The kubernetes secret where the token is stored",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the kubernetes secret"
+                    },
+                    "key": {
+                      "type": "string",
+                      "description": "Key of the kubernetes secret containing the token"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "key"
+                  ]
+                },
+                "if": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "secret"
+                  ]
+                }
+              }
+            },
+            "kubernetes": {
+              "type": "object",
+              "description": "OpenBao kubernetes authentication method. It's expected that the serviceAccount defined in the values.yaml file has the required permissions to access the OpenBao API.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable OpenBao kubernetes authentication method",
+                  "const": false
+                },
+                "role": {
+                  "type": "string",
+                  "description": "The role the kubernetes service account will assume upon successful authentication in OpenBao."
+                }
+              },
+              "required": [
+                "enabled"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "token": {
+              "type": "object",
+              "description": "OpenBao token authentication method",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable OpenBao token authentication method",
+                  "const": false
+                },
+                "secret": {
+                  "type": "object",
+                  "description": "The kubernetes secret where the token is stored",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the kubernetes secret"
+                    },
+                    "key": {
+                      "type": "string",
+                      "description": "Key of the kubernetes secret containing the token"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "key"
+                  ]
+                },
+                "if": {
+                  "properties": {
+                    "enabled": {
+                      "const": true
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "secret"
+                  ]
+                }
+              }
+            },
+            "kubernetes": {
+              "type": "object",
+              "description": "OpenBao kubernetes authentication method. It's expected that the serviceAccount defined in the values.yaml file has the required permissions to access the OpenBao API.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable OpenBao kubernetes authentication method",
+                  "const": true
+                },
+                "role": {
+                  "type": "string",
+                  "description": "The role the kubernetes service account will assume upon successful authentication in OpenBao."
+                }
+              },
+              "required": [
+                "enabled",
+                "role"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
 }

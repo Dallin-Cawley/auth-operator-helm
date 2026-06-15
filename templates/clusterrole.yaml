@@ -1,10 +1,10 @@
-{{- if .Values.kubeAPI.clusterRole.enabled }}
+{{- if .Values.kubeAPI.operator.clusterRole.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: {{ include "auth-operator.name" . }}
-  name: {{ .Values.kubeAPI.clusterRole.name }}
+  name: {{ .Values.kubeAPI.operator.clusterRole.name }}
 rules:
   - apiGroups:
       - auth.championtourney.com

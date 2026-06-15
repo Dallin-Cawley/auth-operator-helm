@@ -14,20 +14,39 @@ spec:
       labels:
         {{- include "auth-operator.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ .Values.kubeAPI.serviceAccount.name | default .Release.Name }}
+      securityContext:
+        runAsUser: 1001
+      serviceAccountName: {{ .Values.kubeAPI.operator.serviceAccount.name | default .Release.Name }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "git.championtourney.com/championtourney/auth-controller:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "git.championtourney.com/championtourney/auth-controller:{{ .Values.image.operator.tag }}"
+          imagePullPolicy: {{ .Values.image.operator.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           env:
+            {{- if .Values.store.openbao.enabled }}
+            {{- if .Values.store.openbao.tls.selfSigned }}
+            - name: OPENBAO_TLS_SELF_SIGNED
+              value: "true"
+            - name: CA_PATH
+              value: "/vault/tls"
+            - name: CA_CERT_NAME
+              value: {{ .Values.store.openbao.tls.caCertKey }}
+            {{- else }}
+            - name: OPENBAO_TLS_SELF_SIGNED
+              value: "false"
+            {{- end }}
             - name: OPENBAO_UNIX_SOCKET_PATH
               value: /var/run/openbao/socket/bao-proxy.sock
             - name: VAULT_ADDR
               value: {{ .Values.store.openbao.vaultADDR }}
+            - name: OPENBAO_KV2_MOUNT_PATH
+              value: {{ .Values.store.openbao.kv2MountPath }}
+            - name: OPENBAO_MASTER_SECRET_PATH
+              value: {{ .Values.store.openbao.masterSecretPath }}
+            {{- end }}
             {{- range .Values.environment }}
             - name: {{ .name }}
               value: {{ .value }}
@@ -41,32 +60,55 @@ spec:
             {{ toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-            {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+            {{- if .Values.store.openbao.enabled }}
+            {{- if .Values.store.openbao.proxy.authMethod.operator.token.enabled }}
             - name: openbaotoken
               mountPath: /var/secrets/openbao
               readOnly: true
             {{- end }}
+            {{- if .Values.store.openbao.tls.selfSigned }}
+            - name: openbaocert
+              mountPath: /vault/tls
+              readOnly: true
+            {{- end }}
             - name: bao-socket
               mountPath: /var/run/openbao/socket
+            {{- end }}
+        {{- if .Values.store.openbao.enabled }}
         - name: openbao-proxy
           image: "timmy2654/openbao-proxy:{{ .Values.store.openbao.proxy.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.operator.pullPolicy }}
           env:
             - name: VAULT_ADDR
               value: {{ .Values.store.openbao.vaultADDR }}
-            {{ if .Values.store.openbao.proxy.authMethod.kubernetes.enabled }}
+            {{ if .Values.store.openbao.proxy.authMethod.operator.kubernetes.enabled }}
             - name: AUTH_METHOD
               value: KUBERNETES_ROLE
             - name: OPENBAO_ROLE
-              value: {{ .Values.store.openbao.proxy.authMethod.kubernetes.role }}
+              value: {{ .Values.store.openbao.proxy.authMethod.operator.kubernetes.role }}
             {{ else }}
             - name: AUTH_METHOD
               value: TOKEN
             {{ end }}
+            {{- if .Values.store.openbao.tls.selfSigned }}
+            - name: CA_PATH
+              value: "/vault/tls"
+            - name: CA_CERT_NAME
+              value: {{ .Values.store.openbao.tls.caCertKey }}
+            - name: TLS_CERT_NAME
+              value: {{ .Values.store.openbao.tls.tlsCertKey }}
+            - name: TLS_KEY_NAME
+              value: {{ .Values.store.openbao.tls.tlsKeyKey }}
+            {{- end }}
           volumeMounts:
-            {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+            {{- if and .Values.store.openbao.proxy.authMethod.operator.token.enabled .Values.store.openbao.enabled }}
             - name: openbaotoken
               mountPath: /var/secrets/openbao
+              readOnly: true
+            {{- end }}
+            {{- if .Values.store.openbao.tls.selfSigned }}
+            - name: openbaocert
+              mountPath: /vault/tls
               readOnly: true
             {{- end }}
             - name: bao-socket
@@ -75,11 +117,19 @@ spec:
             - name: bao-proxy
               containerPort: 8200
               protocol: TCP
+        {{- end }}
       volumes:
-        {{- if and .Values.store.openbao.proxy.authMethod.token.enabled .Values.store.openbao.enabled }}
+        {{- if .Values.store.openbao.enabled }}
+        {{- if .Values.store.openbao.proxy.authMethod.operator.token.enabled}}
         - name: openbaotoken
           secret:
-            secretName: {{ .Values.store.openbao.proxy.authMethod.token.secret.name }}
+            secretName: {{ .Values.store.openbao.proxy.authMethod.operator.token.secret.name }}
+        {{- end }}
+        {{- if .Values.store.openbao.tls.selfSigned }}
+        - name: openbaocert
+          secret:
+            secretName: {{ .Values.store.openbao.tls.secretName }}
         {{- end }}
         - name: bao-socket
           emptyDir: {}
+        {{- end }}

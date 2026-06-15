@@ -1,10 +1,10 @@
-{{- if .Values.kubeAPI.role.enabled }}
+{{- if .Values.kubeAPI.operator.role.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
     app.kubernetes.io/name: {{ include "auth-operator.name" . }}
-  name: {{ .Values.kubeAPI.role.name }}
+  name: {{ .Values.kubeAPI.operator.role.name }}
   namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups:
