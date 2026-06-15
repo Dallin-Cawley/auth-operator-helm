@@ -1,7 +1,5 @@
 # Auth Operator Helm Chart
 
-WORK IN PROGRES - INFORMATION MAY OR MAY NOT BE UP TO DATE
-
 This Helm chart deploys the `auth-operator` on a Kubernetes cluster. The `auth-operator` manages authentication-related resources and integrates with OpenBao for secure credential storage. **Note: OpenBao is currently the only supported backend store.**
 
 ## Prerequisites
@@ -57,11 +55,11 @@ Currently, OpenBao is the only supported backend store for the auth-operator.
 
 **Uniqueness Rule:** If `store.openbao.tls.selfSigned` is `true`, then `store.openbao.tls.secretName` and `store.openbao.tls.caCertKey` are **required**.
 
-| Parameter                      | Description                                                                                                                                                                 | Default                  |
-|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| Parameter                      | Description                                                                                                                                                                                     | Default                  |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
 | `store.openbao.tls.selfSigned` | Whether the OpenBao server utilizes a self-signed certificate. This is useful when the openbao proxy or another client wouldn't be able to validate the certificate without the CA certificate. | `true`                   |
-| `store.openbao.tls.secretName` | The name of the secret containing the TLS certificate and key                                                                                                               | `internal-openbao-cert`  |
-| `store.openbao.tls.caCertKey`  | The name of the data key in the secret containing the CA certificate                                                                                                        | `ca.crt`                 |
+| `store.openbao.tls.secretName` | The name of the secret containing the TLS certificate and key. The secret must be in the same namespace as the auth-operator.                                                                   | `internal-openbao-cert`  |
+| `store.openbao.tls.caCertKey`  | The name of the data key in the secret containing the CA certificate                                                                                                                            | `ca.crt`                 |
 
 #### OpenBao Proxy Configuration
 
