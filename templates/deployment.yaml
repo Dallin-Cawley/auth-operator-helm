@@ -19,7 +19,7 @@ spec:
       serviceAccountName: {{ .Values.kubeAPI.operator.serviceAccount.name | default .Release.Name }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "git.championtourney.com/championtourney/auth-controller:{{ .Values.image.operator.tag }}"
+          image: "timmy2654/auth-controller:{{ .Values.image.operator.tag }}"
           imagePullPolicy: {{ .Values.image.operator.pullPolicy }}
           ports:
             - name: http

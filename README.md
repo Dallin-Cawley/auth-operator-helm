@@ -20,6 +20,9 @@ helm install auth-operator .
 
 The following table lists the configurable parameters of the Auth Operator chart and their default values.
 
+The API-Auth application expects the client credentials to exist in a file at `/vault/secrets/master`. It is currently
+configured to use the `vault agent injector` to accomplish this.
+
 ### Service Configuration
 
 | Parameter             | Description                      | Default     |
@@ -84,7 +87,7 @@ The `authMethod` configuration applies to both `operator` and `apiAuth`.
 | `store.openbao.proxy.authMethod.operator.kubernetes.enabled` | Enable OpenBao kubernetes authentication method (mutually exclusive with `token`)                             | `true`          |
 | `store.openbao.proxy.authMethod.operator.kubernetes.role`    | The role the kubernetes service account will assume upon successful authentication in OpenBao (Required if `kubernetes.enabled` is true) | `auth-operator` |
 
-##### API Auth Auth Method
+##### API-Auth Authentication Method
 
 | Parameter                                                   | Description                                                                                                   | Default                  |
 |-------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|--------------------------|

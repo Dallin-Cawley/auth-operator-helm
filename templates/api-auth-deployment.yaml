@@ -39,7 +39,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: api-auth
-          image: "git.championtourney.com/championtourney/api-auth:{{ .Values.image.apiAuth.tag }}"
+          image: "timmy2654/api-auth:{{ .Values.image.apiAuth.tag }}"
           imagePullPolicy: {{ .Values.image.apiAuth.pullPolicy | default "IfNotPresent" }}
           ports:
             - name: http
